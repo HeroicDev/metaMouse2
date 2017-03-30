@@ -1,8 +1,6 @@
-#include "Arduino.h"
 #include "Maze.h"
 
 QueueList <Block> queue;
-StackArray <Block> wallStack;
 
 /* Parameters for sensors and wheels */
 int WallDist = 380;
@@ -25,12 +23,13 @@ byte speed = 50;//60; //127;
 Block currentBlock;
 Block maze[mazeSize][mazeSize]; 
 int currentX; //x location
-int currentY; //y location  
-int lastDir = NORTH;
+int currentY; //y location
 int nextDir = NORTH;
 int currentDir; //current direction
 int minDist;
 /* End maze parameters */
+
+QueueList <Block> modQ;
 
 Maze::Maze()
 {
@@ -39,7 +38,11 @@ Maze::Maze()
 
 bool Maze::foundCenter()
 {
-  return currentBlock.weight == 0;
+  if (currentBlock.weight == 0) {
+    return true;
+  }
+
+  return false;
 }
 
 void Maze::setUpWheels()
@@ -94,29 +97,28 @@ void Maze::checkForWalls()
 /* Simulation test function Makes a move*/
 void Maze::sim()
 {
-  //check current block
   modifiedFill(currentBlock);
-
-  nextDir = getNextDir(currentBlock);
+//  nextDir = getNextDir(currentBlock);
   Block nextB = getNextDirTwo(currentBlock);
   moveMouseToNextBlock(nextB);
   //moveToDir(nextDir);
+  //check current block
+   
 }
 
 void Maze::moveMouseToNextBlock(Block b)
 {
   int dir = -10; //error
-  if (b.y > currentY && b.x == currentX) {
-    //validate x is the same
-    dir = SOUTH;
-  }
-  else if (b.y < currentY && b.x == currentX) {
+  if (b.y < currentBlock.y && b.x == currentBlock.x) {
     dir = NORTH;
+  }
+  else if (b.y > currentBlock.y && b.x == currentBlock.x) {
+    dir = SOUTH;
   } 
-  else if (b.x > currentX && b.y == currentY) {
+  else if (b.x > currentBlock.x && b.y == currentBlock.y) {
     dir = EAST;
   }
-  else if (b.x < currentX && b.y == currentY){
+  else if (b.x < currentBlock.x && b.y == currentBlock.y){
     dir = WEST;
   }
   
@@ -127,19 +129,15 @@ void Maze::moveToDir(int direction)
 {
   switch (direction) {
     case NORTH:
-      Serial.println("Moving North");
       moveForward();
       break;
     case SOUTH:
-      Serial.println("Moving South");
       moveBackward();
       break;
     case EAST:
-      Serial.println("Moving East");
       moveRight();
       break;
     case WEST:
-      Serial.println("Moving West");
       moveLeft();
       break;
     case ERROR_DIR:
@@ -193,9 +191,49 @@ int Maze::getNextDir(Block blk)
   }
 }
 
-Block Maze::getNextDirTwo(Block blk)
+Block Maze::getNextDirTwo(Block b)
 {
-  QueueList<Block> nQ; //queue for neighbors to be examined
+  Block minN;
+  int md = mazeSize * mazeSize;
+
+  if (!b.northWall) {
+    Block n = getNeighbor(b, NORTH);
+    if (inBounds(n) && n.weight < md) {
+      md = n.weight;
+      minN = n;
+    }
+  }
+
+  if (!b.southWall) {
+    Block n = getNeighbor(b, SOUTH);
+    if (inBounds(n) && n.weight < md) {
+      md = n.weight;
+      minN = n;
+    }
+  }
+
+  if (!b.westWall) {
+    Block n = getNeighbor(b, WEST);
+    if (inBounds(n) && n.weight < md) {
+      md = n.weight;
+      minN = n;
+    }
+  }
+  
+  if (!b.eastWall) {
+    Block n = getNeighbor(b, EAST);
+    if (inBounds(n) && n.weight < md) {
+      md = n.weight;
+      minN = n;
+    }
+  }
+  
+  return minN;
+
+
+
+  /*
+  QueueList <Block> nQ; //queue for neighbors to be examined
   if (!blk.northWall) {
     Block n = getNeighbor(blk, NORTH);
     if (inBounds(n)) {
@@ -222,44 +260,30 @@ Block Maze::getNextDirTwo(Block blk)
     if (inBounds(n)) {
       nQ.push(n);
     }
-  }
+  } */
 
   /* Sort the queue */
-  int len = nQ.count();
-  Block items [len];
-  int k = 0;
-  while (!nQ.isEmpty()) {
-    items[k] = nQ.pop();
-    k++;
-  }
+//  int len = nQ.count();
+//  Block items [len];
+//  int k = 0;
+//  while (!nQ.isEmpty()) {
+//    items[k] = nQ.pop();
+//    k++;
+//  }
 
   /* Bubble Sort */
-  for (int i=0; i< (len - 1); i++) {
-    for (int j=0; j < (len - (i+1)); j++) {
-      if (items[i].weight > items[i+1].weight) {
-        Block t = items[i];
-        items[i] = items[i+1];
-        items[i+1] = t;
-      }
-    }
-  }
-
-  Block tt = items[0];
-
-  //print item at the top
-  Serial.print("Top block: (");
-  Serial.print(tt.x);
-  Serial.print(", ");
-  Serial.print(tt.y);
-  Serial.println(")");
-
-  return tt;
-  delay(500000);
-
-//  return items[0];
-
-
-//  return items[0].weight;
+//  for (int i=0; i< (len - 1); i++) {
+//    for (int j=0; j < (len - (i+1)); j++) {
+//      if (items[i].weight > items[i+1].weight) {
+//        Block t = items[i];
+//        items[i] = items[i+1];
+//        items[i+1] = t;
+//      }
+//    }
+//  }
+//
+//  Block tt = items[0];
+//  return tt;
 }
 
 void Maze::createTestMaze()
@@ -421,7 +445,7 @@ int Maze::calculateWeight(int x, int y, int desiredX, int desitedY)
  */
 int Maze::getMinDistance(Block b)
 {
-  int md = sizeof(maze)*sizeof(maze);
+  int md = mazeSize * mazeSize; //sizeof(maze) * sizeof(maze);
 
   if (!b.northWall) {
     Block n = getNeighbor(b, NORTH);
@@ -624,36 +648,6 @@ void Maze::moveCurrentBlock(int x, int y)
   currentBlock = maze[y][x];
 }
 
-Block Maze::getOpenNeighbor(Block blk, int lastDir)                                                                 // modified THIS
-{
-  int x, y;
-  Block nb;
-  if (!blk.northWall && lastDir!=SOUTH ) {
-    nb = getNeighbor(blk, NORTH);
-    nb.dir = NORTH;
-  } else if (!blk.southWall && lastDir!=NORTH ) {
-    nb = getNeighbor(blk, SOUTH);
-    nb.dir = SOUTH;
-  } else if (!blk.westWall && lastDir!=EAST ) {
-    nb = getNeighbor(blk, WEST);
-    nb.dir = WEST;
-  } else if (!blk.eastWall && lastDir!=WEST ) {
-    nb = getNeighbor(blk, EAST);
-    nb.dir = EAST;
-  }
-
-//  return nb;
-
-  //we should add a default case for this
-  if (blk.weight > nb.weight) {
-    return nb;
-  }
-  
-  //return an empty block
-  Block nn;
-  return nn;
-}
-
 //Get the neighbor based on desired direction
 Block Maze::getNeighbor(Block blk, int dir)
 {
@@ -682,31 +676,12 @@ Block Maze::getNeighbor(Block blk, int dir)
   return nb;
 }
 
-//updates weight of current cell and neighboring blocks
-void Maze::floodFill()
-{
-  Block b;
-  int md;
-  while (!queue.isEmpty()) {
-    b = queue.pop();
-    md = getMinDistance(b);
-    floodUpdate(b, md);
-  }
-}
-
-void Maze::floodUpdate(Block b, int md)
-{
-  if ((b.weight-1) < md) {
-    b.weight = (md+1);
-    updateGlobalBlock(b);
-  }
-}
-
 void Maze::updateGlobalBlock(Block blk)
 {
   maze[blk.y][blk.x].weight = blk.weight;
 }
 
+/*
 void Maze::modFlood()
 {
   //get min distance
@@ -725,28 +700,21 @@ void Maze::modFlood()
       pushNeighborsToStack(blk);
     }
   }
-}
+} */
 
 /*
  * Block blk - Current Block
- * int tWeight - Target Weight
- * int rWeight - Replacement Weight
  */
 void Maze::modifiedFill(Block blk)
 {
-  QueueList <Block> modQ;
   modQ.push(blk);
 
   while (!modQ.isEmpty()) {
     Block b = modQ.pop();
     int minD = getMinDistance(b);
-    
-    Serial.print("min distance: ");
-    Serial.println(minD);
 
-    if (b.weight != (minD + 1)) {
+    if (b.weight - 1 != minD) {
       b.weight = (minD + 1);
-      Serial.println("Updating Global Block");
       updateGlobalBlock(b);
 
       //push open neighbors to stack
@@ -777,9 +745,6 @@ void Maze::modifiedFill(Block blk)
           modQ.push(nB);
         }
       }
-    }
-    else {
-      Serial.println("no update needed");
     }
   }
 }
