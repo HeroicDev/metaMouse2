@@ -8,6 +8,7 @@
 
 #include "Arduino.h"
 #include <QueueList.h>
+#include <StackArray.h>
 
 #define NORTH 1
 #define SOUTH 2
@@ -59,7 +60,7 @@ class Maze
     void updateGlobalBlock(Block blk);
     void mapMaze();
     //attributes
-    bool foundCenter();
+    bool isAtCenter();
     void modifiedFill(Block blk);
     void moveCurrentBlock(int x, int y);
     void sim();

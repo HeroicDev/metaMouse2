@@ -1,6 +1,6 @@
 #include "Maze.h"
 
-QueueList <Block> queue;
+StackArray <Block> queue;
 
 /* Parameters for sensors and wheels */
 int WallDist = 380;
@@ -16,7 +16,7 @@ byte AW1 = 1;     // Left Infrared Sensor (Right lead) connected to analog pin 1
 byte AW2 = 2;     // Right Infrared Sensor (Right lead) connected to analog pin 2
 byte AW3 = 3;    //Back infared sensor connected to analog pin 3
 byte frontS, rightS, leftS, backS = 0;    // variable to store the value read
-byte speed = 50;//60; //127;
+byte speed = 60; //127;
 /* End parameters for sensors and wheels */
 
 /* Maze parameters */
@@ -29,14 +29,14 @@ int currentDir; //current direction
 int minDist;
 /* End maze parameters */
 
-QueueList <Block> modQ;
+StackArray <Block> modQ;
 
 Maze::Maze()
 {
   //empty constructor
 }
 
-bool Maze::foundCenter()
+bool Maze::isAtCenter()
 {
   if (currentBlock.weight == 0) {
     return true;
@@ -87,11 +87,7 @@ void Maze::checkForWalls()
     currentBlock.southWall = true;
   }
 
-    Serial.print("current\n(");
-    Serial.print(currentX);
-    Serial.print(", ");
-    Serial.print(currentY);
-    Serial.println(") ");
+  sim();
 }
 
 /* Simulation test function Makes a move*/
@@ -146,14 +142,6 @@ void Maze::moveToDir(int direction)
       moveForward();
       break;
   }
-}
-
-void Maze::printCurrent()
-{
-  Serial.print("current x: ");
-  Serial.print(currentX);
-  Serial.print(", current y: ");
-  Serial.println(currentY);
 }
 
 /*
@@ -229,61 +217,6 @@ Block Maze::getNextDirTwo(Block b)
   }
   
   return minN;
-
-
-
-  /*
-  QueueList <Block> nQ; //queue for neighbors to be examined
-  if (!blk.northWall) {
-    Block n = getNeighbor(blk, NORTH);
-    if (inBounds(n)) {
-      nQ.push(n);
-    }
-  }
-
-  if (!blk.eastWall) {
-    Block n = getNeighbor(blk, EAST);
-    if (inBounds(n)) {
-      nQ.push(n);
-    }
-  }
-
-  if (!blk.southWall) {
-    Block n = getNeighbor(blk, SOUTH);
-    if (inBounds(n)) {
-      nQ.push(n);
-    }
-  }
-
-  if (!blk.westWall) {
-    Block n = getNeighbor(blk, WEST);
-    if (inBounds(n)) {
-      nQ.push(n);
-    }
-  } */
-
-  /* Sort the queue */
-//  int len = nQ.count();
-//  Block items [len];
-//  int k = 0;
-//  while (!nQ.isEmpty()) {
-//    items[k] = nQ.pop();
-//    k++;
-//  }
-
-  /* Bubble Sort */
-//  for (int i=0; i< (len - 1); i++) {
-//    for (int j=0; j < (len - (i+1)); j++) {
-//      if (items[i].weight > items[i+1].weight) {
-//        Block t = items[i];
-//        items[i] = items[i+1];
-//        items[i+1] = t;
-//      }
-//    }
-//  }
-//
-//  Block tt = items[0];
-//  return tt;
 }
 
 void Maze::createTestMaze()
@@ -483,18 +416,21 @@ int Maze::getMinDistance(Block b)
 */
 void Maze::printMaze()
 {
+//  Serial.print("\t");
+  Serial.println("\n\t");
   for (int y = 0; y < mazeSize; y++) {
     //first loop print north wall's
+//    Serial.print("\t");
     for (int x = 0; x < mazeSize; x++) {
       Serial.print("+");
       if (maze[y][x].northWall) {
-        Serial.print("------");
+        Serial.print("-------");
       }
       else {
-        Serial.print("      ");
+        Serial.print("       ");
       }
     }
-    Serial.print("+\n");
+    Serial.print("+\n\t");
 
     //second loop, print left/right wall and weight
     for (int x = 0; x < mazeSize; x++) {
@@ -503,8 +439,14 @@ void Maze::printMaze()
         Serial.print("|");
       }
 
+      int w = maze[y][x].weight;
+      
       Serial.print("  ");
-      Serial.print(maze[y][x].weight);
+      if (w < 10) {
+        Serial.print(" ");
+      }
+      
+      Serial.print(w);
       Serial.print("  ");
 
       if (currentX == x && currentY == y) {
@@ -521,15 +463,15 @@ void Maze::printMaze()
         Serial.print(" ");
       }
     }
-    Serial.print("\n");
+    Serial.print("\n\t");
   }
 
   int end = 0;
   while (end != mazeSize) {
-    Serial.print("+------");
+    Serial.print("+-------");
     end++;
   }
-  Serial.print("+\n");
+  Serial.print("+\n\t");
 }
 
 void Maze::printCords()
