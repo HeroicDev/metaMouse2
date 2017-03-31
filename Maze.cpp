@@ -648,7 +648,6 @@ void Maze::floodfill(Block blk)
       b.weight = (minD + 1);
       updateGlobalBlock(b);
 
-      //push open neighbors to stack
       if (!b.westWall) {
         Block nB = getNeighbor(b, WEST);
         if (nB.weight != 0 && inBounds(nB)) {

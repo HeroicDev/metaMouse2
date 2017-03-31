@@ -16,7 +16,7 @@
 /* Used to detect error in the mouse heading */
 #define ERROR_DIR -10
 
-#define mazeSize 10
+#define mazeSize 6
 
 struct Block
 {
