@@ -7,16 +7,16 @@
 #define Maze_h
 
 #include "Arduino.h"
-#include <QueueList.h>
 #include <StackArray.h>
 
 #define NORTH 1
 #define SOUTH 2
 #define EAST 3
 #define WEST 4
+/* Used to detect error in the mouse heading */
 #define ERROR_DIR -10
 
-#define mazeSize 6
+#define mazeSize 10
 
 struct Block
 {
@@ -61,7 +61,7 @@ class Maze
     void mapMaze();
     //attributes
     bool isAtCenter();
-    void modifiedFill(Block blk);
+    void floodfill(Block blk);
     void moveCurrentBlock(int x, int y);
     void sim();
     boolean inBounds(Block b);

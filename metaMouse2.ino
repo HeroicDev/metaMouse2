@@ -1,5 +1,4 @@
 #include "Maze.h"
-#include <QueueList.h>
 
 Maze mouse;
 
@@ -7,43 +6,39 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   mouse.initializeMaze();
-//  mouse.createTestMaze();
-  mouse.setUpWheels();
-  delay(3000);
+  mouse.createTestMaze();
+  //this is here to get around some odd formating issues during simulation
+  mouse.printMaze();
+//  mouse.setUpWheels();
+//  delay(3000);
 }
 
 void loop() 
 {
-  if (!mouse.isAtCenter()) {
-    testRun();
-  } else {
-    delay(1000000);
-  }
-  
-  
+//  runLiveTest();
+  runSimulation();
+  delay(500);
+}
 
-   /*
+void runSimulation()
+{
   if (!mouse.isAtCenter()) {
-    simulate(); 
+    mouse.printMaze();
+    mouse.sim();
   }
   else {
     mouse.printMaze();
     Serial.println("MOUSE IS AT THE CENTER OF THE MAZE. IT MADE IT");
-    delay(10000);
-  } */
-  
-  //todo: add checker for the center of the maze so we can stop the mouse
-  delay(500); //1 seconds
+    delay(100000);
+  }
 }
 
-void simulate()
+void runLiveTest()
 {
-//  mouse.printMaze();
-  mouse.sim();
-}
-
-void testRun()
-{
-  mouse.checkForWalls();
+  if (!mouse.isAtCenter()) {
+    mouse.checkForWalls();
+  } else {
+    delay(1000000);
+  }
 }
 

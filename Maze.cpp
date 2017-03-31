@@ -1,6 +1,11 @@
-#include "Maze.h"
+/*
+ * @authors
+ * Notes:
+ *  y - indicates the row of the maze
+ *  x - indicates the column of the maze
+ */
 
-StackArray <Block> queue;
+#include "Maze.h"
 
 /* Parameters for sensors and wheels */
 int WallDist = 380;
@@ -25,11 +30,9 @@ Block maze[mazeSize][mazeSize];
 int currentX; //x location
 int currentY; //y location
 int nextDir = NORTH;
-int currentDir; //current direction
-int minDist;
 /* End maze parameters */
 
-StackArray <Block> modQ;
+StackArray <Block> stack;
 
 Maze::Maze()
 {
@@ -93,7 +96,7 @@ void Maze::checkForWalls()
 /* Simulation test function Makes a move*/
 void Maze::sim()
 {
-  modifiedFill(currentBlock);
+  floodfill(currentBlock);
 //  nextDir = getNextDir(currentBlock);
   Block nextB = getNextDirTwo(currentBlock);
   moveMouseToNextBlock(nextB);
@@ -102,9 +105,14 @@ void Maze::sim()
    
 }
 
+/*
+ * Decides which direction the mouse should move to based
+ * based on the block passed in.
+ * @param Block b - the desired block to move the mouse to
+ */
 void Maze::moveMouseToNextBlock(Block b)
 {
-  int dir = -10; //error
+  int dir = ERROR_DIR; //error
   if (b.y < currentBlock.y && b.x == currentBlock.x) {
     dir = NORTH;
   }
@@ -121,6 +129,10 @@ void Maze::moveMouseToNextBlock(Block b)
   moveToDir(dir);
 }
 
+/*
+ * Moves the mouse in the direction passed in
+ * @param int direction - the desired direction to head to
+ */
 void Maze::moveToDir(int direction)
 {
   switch (direction) {
@@ -137,7 +149,6 @@ void Maze::moveToDir(int direction)
       moveLeft();
       break;
     case ERROR_DIR:
-      //go north
       Serial.println("THERE IS AN ERROR IN THE NEXT DIRECTION. GOING NORTH");
       moveForward();
       break;
@@ -145,8 +156,10 @@ void Maze::moveToDir(int direction)
 }
 
 /*
- * Returns the next direction the mouse should head to.
- * Tries to go from larger weights to smaller weights
+ * Returns the next direction the mouse should head 
+ * to based on where it is. 
+ * The movement is also based on big weights to smaller weights.
+ * @param Block blk - The current block the mouse is in.
  */
 int Maze::getNextDir(Block blk)
 {
@@ -327,7 +340,6 @@ void Maze::initializeMaze()
   /* Set current position and currentBlock */
   currentX = 0;
   currentY = 5;
-  currentDir = NORTH;
 
   moveCurrentBlock(currentX, currentY);
 }
@@ -416,11 +428,9 @@ int Maze::getMinDistance(Block b)
 */
 void Maze::printMaze()
 {
-//  Serial.print("\t");
-  Serial.println("\n\t");
+  //Serial.println("\n\t");
   for (int y = 0; y < mazeSize; y++) {
     //first loop print north wall's
-//    Serial.print("\t");
     for (int x = 0; x < mazeSize; x++) {
       Serial.print("+");
       if (maze[y][x].northWall) {
@@ -624,35 +634,14 @@ void Maze::updateGlobalBlock(Block blk)
 }
 
 /*
-void Maze::modFlood()
-{
-  //get min distance
-  while (!queue.isEmpty()) {
-    Block blk = queue.pop();
-    Block nb;
-    int minD = findNeightborWithLowestWeight(true);
-    //end getting min distance
-
-    Serial.print("min distance: ");
-    Serial.println(minD);
-
-    if (blk.weight != 0 && blk.weight != (minD + 1)) {
-      blk.weight = minD + 1;
-      updateGlobalBlock(blk);
-      pushNeighborsToStack(blk);
-    }
-  }
-} */
-
-/*
  * Block blk - Current Block
  */
-void Maze::modifiedFill(Block blk)
+void Maze::floodfill(Block blk)
 {
-  modQ.push(blk);
+  stack.push(blk);
 
-  while (!modQ.isEmpty()) {
-    Block b = modQ.pop();
+  while (!stack.isEmpty()) {
+    Block b = stack.pop();
     int minD = getMinDistance(b);
 
     if (b.weight - 1 != minD) {
@@ -663,28 +652,28 @@ void Maze::modifiedFill(Block blk)
       if (!b.westWall) {
         Block nB = getNeighbor(b, WEST);
         if (nB.weight != 0 && inBounds(nB)) {
-          modQ.push(nB);
+          stack.push(nB);
         }
       }
     
       if (!b.northWall) {
         Block nB = getNeighbor(b, NORTH);
         if (nB.weight != 0 && inBounds(nB)) {
-          modQ.push(nB);
+          stack.push(nB);
         }
       }
     
       if (!b.eastWall) {
         Block nB = getNeighbor(b, EAST);
         if (nB.weight != 0 && inBounds(nB)) {
-          modQ.push(nB);
+          stack.push(nB);
         }
       }
     
       if (!b.southWall) {
         Block nB = getNeighbor(b, SOUTH);
         if (nB.weight != 0 && inBounds(nB)) {
-          modQ.push(nB);
+          stack.push(nB);
         }
       }
     }
